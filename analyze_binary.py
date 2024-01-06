@@ -1,6 +1,8 @@
+import argparse
 import re
 
 import elf_utils
+import db_utils
 
 def dump_raw_binary_bytes(binary_name):
     """
@@ -34,7 +36,8 @@ def analyze_binary_byte_sections(binary_name):
     pass
 
 
-def match_byte_patterns_per_symbol(lib_mapping, bin_mapping):
+
+def match_byte_patterns_per_symbol(lib_mapping, bin_mapping, lib_in_db):
     """
         With two given dicts (one for the binary to analyze, the other library to compare with) the function will check per symbol
         if the byte sequence in the binary matches with one of those in the library. If there is a match, it is highly likely the
@@ -65,8 +68,14 @@ def match_byte_patterns_per_symbol(lib_mapping, bin_mapping):
                 bin_mapping[bin_section] = elf_utils.neutralize_branch_link_instr(bin_mapping[bin_section])
 
             if (bin_mapping[bin_section] == lib_mapping[lib_section]):
-                print("Matched: library section: " + lib_section + lib_mapping[lib_section]+ " with binary section: " + bin_section + bin_mapping[bin_section])
-                break        
+                if lib_in_db:
+                    # since we used lib from the db we need to retrieve the function name and headers and so on
+                    db_lib_entry = db_utils.retrieve_table_entry(lib_section)
+                    print("Matched: library section: " + db_lib_entry[1] + lib_mapping[lib_section] + " with binary section: " + bin_section + bin_mapping[bin_section])
+                    break
+                else:
+                    print("Matched: library section: " + lib_section + lib_mapping[lib_section]+ " with binary section: " + bin_section + bin_mapping[bin_section])
+                    break        
 
 
 def match_byte_patterns(byte_mapping, input_binary):
@@ -91,3 +100,14 @@ def match_byte_patterns(byte_mapping, input_binary):
         if match_val > 0:
             print("Found match on index: " + str(match_val))
             print("matched: " + entry + " - " + byte_mapping[entry])
+
+
+
+if __name__=="__main__":
+    global_parser = argparse.ArgumentParser(
+        prog='Library-finder',
+        description='TBD'
+    )
+    subparsers = global_parser.add_subparsers(title='Subcommands', help='TBD')
+    add_lib_db_parser = subparsers.add_parser("add_lib", help='')
+    

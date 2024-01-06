@@ -5,8 +5,11 @@ import shlex
 import subprocess
 
 import analyze_binary
+import db_utils
 
 arm_isa = False
+# not so pretty variable to use our db instead of mapping the library
+lib_in_db = True
 
 #logging.basicConfig(filename='result_log.txt', encoding='utf-8', level=logging.ERROR)
 
@@ -41,6 +44,7 @@ def dump_binary(binary_name):
             subprocess.run(["arm-none-eabi-objdump", "-d", binary_name], stdout=outfile)
         else:
             subprocess.run(["objdump", "-d", binary_name], stdout=outfile)
+
 
 
 def library_build_symbol_byte_mapping(library_name):
@@ -79,22 +83,33 @@ def library_build_symbol_byte_mapping(library_name):
 
 
 def analyze_dump(library_name, binary_name, arm_arch):
-    #TODO add argparser to add it as a parameter instead of hardcoded
-    #symbol_byte_mapping = library_build_symbol_byte_mapping("test-samples/libmylib.so")
-    if (arm_arch):
-        arm_isa = True
-    lib_symbol_byte_mapping = library_build_symbol_byte_mapping(library_name)
-    #print("----------library symbol byte mapping -------")
-    #print(lib_symbol_byte_mapping)
-
+    
     # TODO: need more structuring
     bin_symbol_byte_mapping = library_build_symbol_byte_mapping(binary_name)
     #print("----------- binary symbol byte mapping -------")
     #print(bin_symbol_byte_mapping)
+    
+    if lib_in_db:
+        # no need to analyze library, use the database
+        lib_mapping = db_utils.load_function_bytes_in_struct()
+        # we need to convert out lib_symbol mapping from a list of tuples into a dict {rowid : function_bytes}
+        lib_symbol_mapping_dict = dict()
+        for elem in lib_mapping:
+            lib_symbol_mapping_dict.update({elem[0]:elem[1]})
 
-    analyze_binary.match_byte_patterns_per_symbol(lib_symbol_byte_mapping, bin_symbol_byte_mapping)
-    #analysis_file = analyze_binary.dump_raw_binary_bytes(binary_name)
-    #analyze_binary.match_byte_patterns(lib_symbol_byte_mapping, analysis_file)
+        analyze_binary.match_byte_patterns_per_symbol(lib_symbol_mapping_dict, bin_symbol_byte_mapping, True)
+
+    else:
+        #TODO add argparser to add it as a parameter instead of hardcoded
+        #symbol_byte_mapping = library_build_symbol_byte_mapping("test-samples/libmylib.so")
+        if (arm_arch):
+            arm_isa = True
+        lib_symbol_byte_mapping = library_build_symbol_byte_mapping(library_name)
+        #print("----------library symbol byte mapping -------")
+        #print(lib_symbol_byte_mapping)
+        analyze_binary.match_byte_patterns_per_symbol(lib_symbol_byte_mapping, bin_symbol_byte_mapping, False)
+        #analysis_file = analyze_binary.dump_raw_binary_bytes(binary_name)
+        #analyze_binary.match_byte_patterns(lib_symbol_byte_mapping, analysis_file)
  
 
 if __name__=="__main__":
@@ -106,6 +121,7 @@ if __name__=="__main__":
                         help='library which symbols and byte sequences should be parsed. For now only supports libraries stored in the test-samples folder')
     parser.add_argument('--binary', dest='binary_name', required=True)
     parser.add_argument('--arm', default=False, action='store_true')
+    parser.add_argument('')
     args = parser.parse_args()
 
     #TODO: clean up the print statements and use logging module for cleaner logging
