@@ -50,6 +50,10 @@ def match_byte_patterns_per_symbol(lib_mapping, bin_mapping, lib_in_db):
     # note that for the bl instruction we need to search a bit different as the library does not contain all correct
     # bytes since it is a relocatable
 
+    # we maintain a dict where we will put in our matched symbols using the format {binary symbol : symbolID}
+    # this is only if we match symbols from the database!
+    matched_lib_dict = dict()
+
     for lib_section in lib_mapping:
         bl_present = False
         
@@ -70,12 +74,19 @@ def match_byte_patterns_per_symbol(lib_mapping, bin_mapping, lib_in_db):
             if (bin_mapping[bin_section] == lib_mapping[lib_section]):
                 if lib_in_db:
                     # since we used lib from the db we need to retrieve the function name and headers and so on
-                    db_lib_entry = db_utils.retrieve_table_entry(lib_section)
-                    print("Matched: library section: " + db_lib_entry[1] + lib_mapping[lib_section] + " with binary section: " + bin_section + bin_mapping[bin_section])
+                    #db_lib_entry = db_utils.retrieve_table_entry(lib_section)
+                    # print(db_lib_entry)
+                    print("Matched: library section: " + str(lib_section) + " " + lib_mapping[lib_section] + " with binary section: " + str(bin_section) + " " + bin_mapping[bin_section])
+                    
+                    # add our match to the dict
+                    matched_lib_dict.update({bin_section:lib_section})
                     break
                 else:
-                    print("Matched: library section: " + lib_section + lib_mapping[lib_section]+ " with binary section: " + bin_section + bin_mapping[bin_section])
+                    print("Matched: library section: " + lib_section + lib_mapping[lib_section]+ " with binary section: " + bin_section + " " + bin_mapping[bin_section])
                     break        
+    
+    print(matched_lib_dict)
+    return matched_lib_dict
 
 
 def match_byte_patterns(byte_mapping, input_binary):
@@ -101,13 +112,3 @@ def match_byte_patterns(byte_mapping, input_binary):
             print("Found match on index: " + str(match_val))
             print("matched: " + entry + " - " + byte_mapping[entry])
 
-
-
-if __name__=="__main__":
-    global_parser = argparse.ArgumentParser(
-        prog='Library-finder',
-        description='TBD'
-    )
-    subparsers = global_parser.add_subparsers(title='Subcommands', help='TBD')
-    add_lib_db_parser = subparsers.add_parser("add_lib", help='')
-    
