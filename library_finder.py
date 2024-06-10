@@ -109,7 +109,7 @@ if __name__=="__main__":
         print("Match subcommand invoked")
         match_binary_with_db(args.binary_file, args.arm)
     elif (args.command == 'compare'):
-        print("Compare subcommand inoked")
+        print("Compare subcommand invoked")
         match_binary_with_lib_file(args.binary_file, args.library_file, args.arm)
     else:
         print("No valid subcommand found")
