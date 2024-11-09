@@ -23,7 +23,7 @@ def get_compiler_type_from_elf(file_name):
     return compiler_type_output
 
 
-def neutralize_branch_link_instr(byte_sequence_with_bl):
+def neutralizeBlInstruction(file_handle, byte_sequence_with_bl):
     """
     In arm branch link instruction carries bytes that contains the offset positive or negative
     from the PC register to where the the CPU should jump to. However, in the library this is a relocation
@@ -31,8 +31,14 @@ def neutralize_branch_link_instr(byte_sequence_with_bl):
     to match it with the library. We know from the ARMV6-M datasheet that bl will always be 32-bits wide and for a positive 
     jump it will start with f0xx and a negative jump will start with f7xx
     """
-    #print("About to neutralize the following section....")
-    #print(byte_sequence_with_bl)
-    byte_sequence_neutralized = re.sub(r"\s(f7[\da-f]f|f00\d)\s[\da-f]{4}", " f7ff fffe", byte_sequence_with_bl,flags=re.IGNORECASE)
+    file_handle.write("\nIn neutralize_branch_without_link_instr()")
+    #file_handle.write("\nAbout to neutralize following byte sequence: \n")
+    #file_handle.write(byte_sequence_with_bl)
+    byte_sequence_neutralized = re.sub(r"\s([\da-f]{2}\sf7)\s([\da-f]{2}\s[f|d][\da-f]\s)", " ff f7 fe ff ", byte_sequence_with_bl,flags=re.IGNORECASE)
+
+    # only do this when debugging, it clogs up the logging file quickly
+    #file_handle.write("\nNeutralized instruction: ")
+    #file_handle.write(byte_sequence_neutralized)
+
     return byte_sequence_neutralized
 

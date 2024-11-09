@@ -4,7 +4,9 @@ This file contains utility functions to save our analyzed libraries into a datab
 
 import sqlite3
 
-def create_lib_finder_db(db_name):
+
+def createNewDB(db_name):
+    print("db name: " + db_name)
     conn = sqlite3.connect(str(db_name))
     cursor = conn.cursor()
 
@@ -37,6 +39,23 @@ def create_lib_finder_db(db_name):
 
     conn.close()
 
+
+def getAllTablesFromDB(db_name):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+
+    res = cursor.execute("SELECT name FROM sqlite_master").fetchall()
+
+    conn.close()
+
+    # return a list containing tuples with the names so you need to iterate and retrieve per iteration item the elemnt at index 0
+    # so something like:
+    # for elem in res:
+        # elem[0]
+    table_list = list()
+    for elem in res:
+        table_list.append(elem[0])
+    return table_list
 
 def test_initial_db():
     """
@@ -75,14 +94,12 @@ def test_initial_db():
 
     conn.close()
 
-
-
-def delete_table(table_name):
+def delete_table(db_name, table_name):
     """
         Helper function to delete table. To delete the entire db we should remove the file
     """
 
-    conn = sqlite3.connect("libraries.db")
+    conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
 
     delete_table_string = "DROP TABLE {t_name}".format(t_name=table_name)
@@ -91,8 +108,8 @@ def delete_table(table_name):
     conn.close()
 
 
-def insert_libraries_entry(library_name, platform_architecture, compiler_type, compiler_flags, header_files):
-    conn = sqlite3.connect("library_symbols.db")
+def addLibraryToDB(db_name, library_name, platform_architecture, compiler_type, compiler_flags, header_files):
+    conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
 
     insert_statement_string = "INSERT INTO libraries(libraryName, platformArch, compiler, compilerFlags, headerfiles) VALUES ('{libname}', '{platarch}', '{comp}', '{compflags}', '{headerf}')".format(libname=library_name, 
@@ -109,6 +126,30 @@ def insert_libraries_entry(library_name, platform_architecture, compiler_type, c
     return res
 
                    
+def addSingleFunctionToDB(library_id, symbol_name, symbol_bytecode):
+    conn = sqlite3.connect("library_symbols.db")    
+    cursor = conn.cursor()
+
+    insert_statement_string = "INSERT INTO symbols(libraryID, symbolName, symbolBytecode) VALUES ('{lib_id}', '{symbol_n}', '{symbol_byte}')".format(lib_id=library_id, symbol_n=symbol_name, symbol_byte=symbol_bytecode)
+    res = cursor.execute(insert_statement_string)
+    conn.commit()
+    conn.close()
+
+
+def addMultipleFunctionsOneLibraryToDB(db_name, library_id, function_byte_mapping):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+
+    for fb_elem in function_byte_mapping:
+        # construct the string for inserting in the database
+        insert_statement_string = "INSERT INTO symbols(libraryID, symbolName, symbolBytecode) VALUES ('{lib_id}', '{symbol_n}', '{symbol_byte}')".format(lib_id=library_id, symbol_n=fb_elem, symbol_byte=function_byte_mapping[fb_elem])
+
+        res = cursor.execute(insert_statement_string)
+
+    conn.commit()
+    conn.close() 
+
+
 def insert_libraries_multiple_entries(list_libraries_entries):
     """
         Function to insert multiple entries in the table
@@ -209,18 +250,31 @@ def load_bytecode_in_struct():
     return res
 
 
-def get_libraries_based_on_id(library_id):
-    conn = sqlite3.connect("library_symbols.db")
+def getLibraryBasedOnLibraryId(db_name, library_id):
+    conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
     select_statement_string = "SELECT * FROM libraries WHERE libraryID='{lib_id}'".format(lib_id=library_id)
-    res = cursor.execute(select_statement_string).fetchall()
+    res = cursor.execute(select_statement_string).fetchone()
     conn.close()
     
+    #return as tuple 
     return res
 
 
-def get_linked_libraryID_from_symbolID(symbol_id):
-    conn = sqlite3.connect("library_symbols.db")
+def getSymbolBasedOnSymbolId(db_name, symbol_id):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+
+    select_statement_str = "SELECT * FROM symbols WHERE symbolID='{sym_id}'".format(sym_id = symbol_id)
+    res = cursor.execute(select_statement_str).fetchone()
+    conn.close()
+
+    # returns a tuple in format (symbolId, libraryId, symbolName, symbolBytecode)
+    return res
+
+
+def getLibraryIdFromLinkedSymbolId(db_name, symbol_id):
+    conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
 
     select_statement_string = "SELECT libraryID FROM symbols WHERE symbolID='{sym_id}'".format(sym_id=symbol_id)
@@ -229,13 +283,23 @@ def get_linked_libraryID_from_symbolID(symbol_id):
 
     return res
 
+def getLibraryIdOfAllLibraries(db_name):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
 
-def get_library_based_on_all_but_id(lib_name, comp_type, comp_flags, plat_type, headers):
+    select_statement_str = "SELECT libraryID FROM libraries"
+
+    res = cursor.execute(select_statement_str).fetchall()
+    conn.close()
+
+    return res
+
+def getLibraryBasedOnAllButId(db_name, lib_name, plat_type, comp_type, comp_flags, headers):
     """
     Helper function to determine whether a library entry already exists, but we do not know the id
     Returns a list of id's if found matches or empty list if not
     """
-    conn = sqlite3.connect("library_symbols.db")
+    conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
 
     select_statement_str = "SELECT libraryID FROM libraries WHERE libraryName='{libname}' AND platformArch='{platarch}' AND compiler='{comp}' AND compilerFlags='{comp_f}' AND headerfiles='{head}'".format(libname=lib_name, 
@@ -246,6 +310,18 @@ def get_library_based_on_all_but_id(lib_name, comp_type, comp_flags, plat_type, 
     res = cursor.execute(select_statement_str).fetchall()
     conn.close()
     
+    return res
+
+def getSymbolsBasedOnLibraryId(db_name, libraryId):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+
+    select_statement_str = "SELECT * FROM symbols WHERE libraryID={}".format(libraryId)
+
+    res = conn.execute(select_statement_str).fetchall()
+    conn.close()
+
+    # returns a list of tuples with symbolId : symbolBytecode --> [(2, 00 aa bb cc dd), (3, de ad be ef)]
     return res
 
 
