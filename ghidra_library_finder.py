@@ -33,8 +33,8 @@ def findFunctionMatches(current_prog, file_handle, db_name):
     # ask user to search smart (so retrieve program properties like architecture, compiler, etc.) or
     # to do a full search
     # only enable this print if really needed because it clogs up the logging file
-    #file_handle.write("\nFunction bytecode mapping of input file:\n")
-    #file_handle.write(str(input_fb_mapping))
+    file_handle.write("\nFunction bytecode mapping of input file:\n")
+    file_handle.write(str(input_fb_mapping))
 
     search_algorithm = askChoice("Choose type of search", "Do you want to do a smart search(reduce time) or full search?", ["smart", "full"], "full")
         # if smart search is chose, we filter libraries from the db based on the architecture (maybe later differen filters)
@@ -73,9 +73,9 @@ def findFunctionMatches(current_prog, file_handle, db_name):
         # this algorithm can likely be more optimized but we leave it for now as is.
         for symbol_id in matched_symbol_id_set:
             db_symbol_struct = db_utils.getSymbolBasedOnSymbolId(db_name, symbol_id)
-            file_handle.write("\nfindFunctionMatches() >> db_symbol_struct retrieved : {}".format(db_symbol_struct))
+            #file_handle.write("\nfindFunctionMatches() >> db_symbol_struct retrieved : {}".format(db_symbol_struct))
             db_library_struct = db_utils.getLibraryBasedOnLibraryId(db_name, db_symbol_struct[1])
-            file_handle.write("\nfindFunctionMatches() >> db_library_struct retrieved : {}".format(db_library_struct))
+            #file_handle.write("\nfindFunctionMatches() >> db_library_struct retrieved : {}".format(db_library_struct))
             # update this list for reporting
             found_function_matches_list.append((db_library_struct[0], db_library_struct[1], db_library_struct[5], db_symbol_struct[0], db_symbol_struct[2], db_symbol_struct[3]))    
         # once the search ends, use the earlier created structure to extract the headers and report
@@ -186,8 +186,9 @@ if __name__=="__main__":
                 if generate_report:
                     report_name = os.path.join(project_location, "matched_functions_report.txt")
                     with open(report_name, 'w') as report_file_handle:
+                        report_file_handle.write("Report generated at : {}\n".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")))
                         for match_elem in found_matched_list:
-                            report_file_handle.write("\nLibrary={lib_name}, Function={func_name}, Headerfile={header_name}\n".format(lib_name=match_elem[1], func_name=match_elem[4], header_name=match_elem[2]))
+                            report_file_handle.write("\nLibrary={lib_name}, Function={func_name}, Headerfile={header_name}".format(lib_name=match_elem[1], func_name=match_elem[4], header_name=match_elem[2]))
                 output_file_handle.write("\nReport of the found matches:\n")
                 for match_elem in found_matched_list:
                     output_file_handle.write(str(match_elem) + "\n")

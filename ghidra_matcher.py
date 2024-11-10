@@ -4,7 +4,7 @@ import db_utils
 import elf_utils
 
 def matchByteSequencesFromInputs(file_handle, reference_fb_mapping, input_fb_mapping):
-    print("I should be here")
+    #print("I should be here")
     file_handle.write("\nIn function matchByteSequencesFromInputs()")
     matchedFunctionsId = set()
 
@@ -20,7 +20,7 @@ def matchByteSequencesFromInputs(file_handle, reference_fb_mapping, input_fb_map
             # this could miss a match even though its functionally the same, so as a solution we neutralize all
             # instructions that do some branching. Now we only support bl, later also other ones
             # check for bl instruction in both reference and input bytecode
-            if ((len(re.findall(r"\s([\da-f]{2}\sf7)\s([\da-f]{2}\s[f|d][\da-f]\s)", reference_bytecode)) > 0) and (len(re.findall(r"\s([\da-f]{2}\sf7)\s([\da-f]{2}\s[f|d][\da-f]\s)", input_bytecode)) > 0)):
+            if ((len(re.findall(r"\s[\da-f]{2}\sf[0-7]\s[\da-f]{2}\s[f|d][\da-f]", reference_bytecode)) > 0) and (len(re.findall(r"\s[\da-f]{2}\sf[0-7]\s[\da-f]{2}\s[f|d][\da-f]", input_bytecode)) > 0)):
                 # by assigning the neutralized instruction we don't change the original bytecode 
                 input_bytecode = elf_utils.neutralizeBlInstruction(file_handle, input_bytecode)
                 reference_bytecode = elf_utils.neutralizeBlInstruction(file_handle, reference_bytecode)
