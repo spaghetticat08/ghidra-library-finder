@@ -1,5 +1,6 @@
 # library-finder
-
+Library-Finder is a Python 3 implementation of a script that will search for matching functions based on equal bytecode. This is done by first populating a SQ-Lite database with analyzed functions from decompiled programs in Ghidra, and then comparing all database functions with a program that is currently analyzed in Ghidra. The matching algorithm will search for exact bytecode that exactly matches both database function and the analyzed function in the program. There is a slight exception for branching instructions, here the bytes related to the instruction are first changed to always match since branching instructions can vary due to different offset.
+This version currently supports Armv6m instruction set, but in the future will be extended to other instruction sets. 
 
 ## Requirements
 - Ghidra, https://github.com/NationalSecurityAgency/ghidra
